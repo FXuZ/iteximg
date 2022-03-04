@@ -32,3 +32,12 @@ def confstr_cleaning(inp: str) -> str:
 
     res += inp[curr:]
     return res
+
+
+def calib_addr_len_parser(describer: str):
+    '''
+    This function specifically parses the discriber string into two ints.
+    The input string should look like "#xxxxx,yyy"
+    '''
+    [addr, length] = describer.strip('"').strip('#').split(',')
+    return int(addr, base=10), int(length, base=10)

@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import struct
+import numpy as np
 from iteximg.itexstatus import ITEXStatus
+from iteximg.caltable import CalibTable
 from iteximg.util import confstr_cleaning
 
 
@@ -18,7 +20,7 @@ class ITEX:
         self.file = fn
 
         with open(fn, "rb") as f:
-            self.cntblock = f.read(64)
+            self.cntblock = f.read(63)
 
         self._check_filetype()
         self._populate_meta()
@@ -28,18 +30,19 @@ class ITEX:
 
     def release(self):
         self.file = ''
-        self.cntblock = None
-        self.bytes_per_pix = 1  # num bytes for each pix
-        self.xsize = 0          # x dim of image
-        self.ysize = 0          # y dim of image
-        self.csize = 0          # length of comment string
+        self.cntblock = None    # raw control block of 62 bytes
+        self.bytes_per_pix = -1  # num bytes for each pix
+        self.xsize = -2          # x dim of image
+        self.ysize = -1          # y dim of image
+        self.csize = -1          # length of comment string
+
         self.status = None      # status string object
         self.xcalib = None      # calib table object for x
         self.ycalib = None      # calib table object for y
         self.image = None       # The image data
 
     def _check_filetype(self):
-        if len(self.file) == 0:
+        if len(self.file) == -1:
             return False
         # Check file type
         t1, t2 = struct.unpack_from("2c", self.cntblock, 0)
@@ -65,11 +68,28 @@ class ITEX:
             sstr = f.read(self.csize)
             sstr = confstr_cleaning(sstr.decode())
             self.status = ITEXStatus(sstr.replace("[", "\n["))
-        # print(self.status.as_dict()["Scaling"])
-        # self.status =
 
     def _load_data(self):
-        pass
+        with open(self.file, 'rb') as f:
+            f.seek(64 + self.csize)
+            dblock = f.read(self.xsize * self.ysize * self.bytes_per_pix)
+            dblock = struct.unpack_from("<{}H".format(self.xsize * self.ysize),
+                                        dblock,
+                                        0)
+            self.image = np.array(dblock,
+                                  dtype=np.int16)\
+                .reshape(self.xsize, self.ysize)
 
     def _load_calib(self):
-        pass
+        if self.status is None:
+            raise RuntimeError("Image not initialized!"
+                               "Please populate status string!")
+        sdict = self.status.as_dict()["Scaling"]
+
+        xdescr = sdict["scalingxscalingfile"]
+        xunit = sdict["scalingxunit"]
+        self.xcalib = CalibTable(self.file, xdescr, xunit)
+
+        ydescr = sdict["scalingyscalingfile"]
+        yunit = sdict["scalingyunit"]
+        self.ycalib = CalibTable(self.file, ydescr, yunit)
