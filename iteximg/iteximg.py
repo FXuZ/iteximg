@@ -14,6 +14,17 @@ class ITEX:
     It contains a struct for the file format.
     '''
     def __init__(self):
+        self.file = ''
+        self.cntblock = None    # raw control block of 62 bytes
+        self.bytes_per_pix = -1  # num bytes for each pix
+        self.xsize = -2          # x dim of image
+        self.ysize = -1          # y dim of image
+        self.csize = -1          # length of comment string
+
+        self.status = None      # status string object
+        self.xcalib = None      # calib table object for x
+        self.ycalib = None      # calib table object for y
+        self.image = None       # The image data
         self.release()
 
     def load_file(self, fn: str):
@@ -78,7 +89,8 @@ class ITEX:
                                         0)
             self.image = np.array(dblock,
                                   dtype=np.int16)\
-                .reshape(self.xsize, self.ysize)
+                .reshape(self.ysize, self.xsize)
+            self.image = np.flip(self.image, axis=1)
 
     def _load_calib(self):
         if self.status is None:
