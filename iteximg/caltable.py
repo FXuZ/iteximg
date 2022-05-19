@@ -23,7 +23,7 @@ class CalibTable():
         if describer != "":
             self._populate_calib(fn, describer, unit)
         else:
-            self.table = None
+            self.table = np.empty(shape=(0), dtype=np.float16)
 
         self.unit = unit
         self.__getitem__ = self.table.__getitem__
