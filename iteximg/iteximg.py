@@ -90,6 +90,7 @@ class ITEX:
             self.image = np.array(dblock,
                                   dtype=np.int16)\
                 .reshape(self.ysize, self.xsize)
+            print(self.image.shape)
             self.image = np.flip(self.image, axis=1)
 
     def _load_calib(self):
@@ -104,4 +105,9 @@ class ITEX:
 
         ydescr = sdict["scalingyscalingfile"]
         yunit = sdict["scalingyunit"]
-        self.ycalib = CalibTable(self.file, ydescr, yunit)
+        if ydescr == "Focus mode":
+            self.ycalib = CalibTable()
+            self.ycalib.table = np.arange(self.ysize)
+            self.ycalib.__getitem__ = self.ycalib.table.__getitem__
+        else:
+            self.ycalib = CalibTable(self.file, ydescr, yunit)

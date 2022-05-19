@@ -7,7 +7,9 @@ from iteximg.util import calib_addr_len_parser
 
 
 class CalibTable():
-    def __init__(self, fn: str, describer: str, unit: str):
+    def __init__(self, fn: str = "",
+                 describer: str = "",
+                 unit: str = ""):
         '''
         The initialization of a calibration table
         :Args:
@@ -18,6 +20,17 @@ class CalibTable():
         The calib table region in the file should consists of an array of
         4-byte floats in little endian
         '''
+        if describer != "":
+            self._populate_calib(fn, describer, unit)
+        else:
+            self.table = None
+
+        self.unit = unit
+        self.__getitem__ = self.table.__getitem__
+
+    def _populate_calib(self, fn: str,
+                        describer: str,
+                        unit: str):
         addr, length = calib_addr_len_parser(describer)
         with open(fn, 'rb') as f:
             f.seek(addr)
@@ -26,6 +39,3 @@ class CalibTable():
                                         buffer, 0)
             self.table = np.array(buffer, dtype=np.float32)
             # super().__init__(self, buffer, dtype=np.float32)
-
-        self.unit = unit
-        self.__getitem__ = self.table.__getitem__
